@@ -1,0 +1,3 @@
+{
+    "MONGO_URI": "mongodb://db-man:HopeJoyLove1@news-app-shard-00-00-llvhx.mongodb.net:27017,news-app-shard-00-01-llvhx.mongodb.net:27017,news-app-shard-00-02-llvhx.mongodb.net:27017/news-app?ssl=true&replicaSet=news-app-shard-0&authSource=admin&retryWrites=true&w=majority"
+}
