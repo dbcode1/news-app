@@ -9,7 +9,7 @@ const MongoDBStore = require('connect-mongodb-session')(session);
 const multer = require('multer')
 const bodyParser = require('body-parser')
 const TWO_HOURS = 1000 * 60 * 60 * 2;
-const { v4: uuidv4 } = require('uuid');
+const uuid4 = require('uuid4');
 const bcrypt = require('bcrypt');
 const { check, validationResult } = require('express-validator');
 
@@ -50,12 +50,17 @@ app.use(
 		resave: false,
 		saveUninitialized: false,
 		secret: SESS_SECRET,
+		store: store,
 		cookie: {
 			maxAge: SESS_LIFETIME,
 			sameSite: true,
 			secure: IN_PROD,
 		},
-		store: store,
+		genid : (req) => { 
+			let id = uuid4(); 
+			return id
+		},
+		
 	})
 );
 
@@ -65,6 +70,7 @@ app.use(
 app.use('/auth', require('./routes/auth'));
 app.use('/auth/login', require('./routes/auth'));
 app.use('/auth/logout', require('./routes/auth'));
+app.use('/collection', require('./routes/collection'));
 // app.use('/profile', require('./routes/profile'));
 // app.use('/posts', require('./routes/posts'));
 
@@ -306,16 +312,6 @@ app.use('/auth/logout', require('./routes/auth'));
 // // 	}
 // // );
 
-app.post('/logout', (req, res) => {
-	req.session.destroy((err) => {
-		if (err) {
-			return res.redirect('/home');
-		}
-
-		res.clearCookie(SESS_NAME);
-		res.redirect('/login');
-	});
-});
 
 app.listen(PORT, (req, res) => {
 	console.log(`http://localhost:${PORT}`);

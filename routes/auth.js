@@ -20,9 +20,10 @@ const User = require('../models/User');
 // })  
 
 // GET ALL USERS  //
-// router.get('/all', (req, res) => {
-// 	res.send(Users);
-// });
+router.get('/all', async (req, res) => {
+	const users = await User.find()
+	res.send(users);
+});
 
 
 // REGISTER //
@@ -56,10 +57,6 @@ router.post(
 					.status(400)
 					.json({ errors: [{ msg: 'User already exists' }] });
             }
-            
-			// let user = Users.some((user) => {
-			// 	user.email === email;
-			// });
 
 			user = new User({
 				name,
@@ -72,9 +69,11 @@ router.post(
 			
             user.password = await bcrypt.hash(password, salt);
             
-            console.log( req.session.id, user.id)
+			console.log('req', req.session.id)
+			
             req.user = user;
 			req.session.userId = user.id;
+
 
             await user.save();
             
@@ -104,28 +103,31 @@ router.post(
 		if (!errors.isEmpty()) {
 			return res.status(400).json({ errors: errors.array() });
 		}
+		const { email, password } = req.body;
 
-        const { email, password } = req.body;
-      
+		// req.session.regenerate((err) => {
+		// 	if(err){ 
+		// 		console.log(err)
+		// 		res.json(err)
+		// 	}
+
+		// })
 
 		try {
-            let user = await User.findOne({ email })
+			let user = await User.findOne({ email })
+			if(!user) { res.sendStatus(401)}
 
 			const isMatch = await bcrypt.compare(password, user.password);
-
-            // if !isMatch TODO:
-            
-            console.log(req.session.id)
-
-			if (user && isMatch) {
-				// set id on session param userId
-				//req.session.userId = user.id;
-				req.user = user;
-				res.send(user)  // test
-				//res.status(200).json('user logged in')
-				//return res.redirect('/home'); REACT
+			if(!isMatch) {
+				res.send(500).json('Invalid credentials')
 			}
-
+        
+			
+			req.user = user;
+			req.session.userId = user.id;
+			console.log(req.session.userId)
+			res.send(user).status(200)
+			
 			// res.redirect('/login'); REACT
 		} catch (err) {
 			console.log(err.message);
@@ -141,16 +143,45 @@ router.post(
 );
 
 // LOGOUT //
+// TODO:  
 router.post('/logout', (req, res) => {
+	console.log(req.session.userId)
 	req.session.destroy((err) => {
 		if (err) {
+			console.log('not logged in')
 			return res.json({err});
 		}
 
 		res.clearCookie('sid') // TODO: SESS_NAME
-		res.redirect('/login');
-	});
+		//res.redirect('/login');
+		console.log('logout', req.session)
+		res.end()
+	});	
+		
 });
+
+router.get('/delete', async (req, res) => {
+	console.log(req.session)
+	if(req.session.userId) {
+	
+		
+		await User.findByIdAndDelete(req.session.userId)
+	
+		req.session.destroy((err) => {
+			if(err) {
+				console.log(err)
+				res.sendStatus(err)
+			}
+
+		res.clearCookie('sid') // TODO:  env
+		// redirect to landing
+		res.send('user deleted from records')
+		})
+	} else {
+		res.end()
+	}
+	
+})
 
 
 module.exports = router;
